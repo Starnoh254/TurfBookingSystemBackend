@@ -3,6 +3,7 @@ package com.starnoh.turf.bookingsystem.backend.repository;
 import com.starnoh.turf.bookingsystem.backend.entity.Booking;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -12,4 +13,6 @@ public interface BookingRepository extends JpaRepository<Booking , Long> {
             LocalDateTime start,
             LocalDateTime end
     );
+
+    List<Booking> findByTurfIdAndDate(Long turfId, LocalDate date);
 }

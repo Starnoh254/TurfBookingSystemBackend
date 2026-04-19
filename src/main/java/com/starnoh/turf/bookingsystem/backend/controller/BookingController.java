@@ -4,6 +4,7 @@ import com.starnoh.turf.bookingsystem.backend.dto.AvailabilityResponse;
 import com.starnoh.turf.bookingsystem.backend.dto.BookingRequest;
 import com.starnoh.turf.bookingsystem.backend.entity.Booking;
 import com.starnoh.turf.bookingsystem.backend.service.BookingService;
+import com.starnoh.turf.bookingsystem.backend.util.ApiResponse;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -19,15 +20,19 @@ public class BookingController {
     }
 
     @GetMapping("/availability")
-    public AvailabilityResponse getAvailability(
+    public ApiResponse<AvailabilityResponse> getAvailability(
             @RequestParam Long turfId,
             @RequestParam LocalDate date
             ){
-        return bookingService.getAvailability(turfId,date);
+
+        AvailabilityResponse response = bookingService.getAvailability(turfId,date);
+        return ApiResponse.success(response);
     }
 
     @PostMapping("/book")
-    public Booking book(@RequestBody BookingRequest request) {
-        return bookingService.createBooking(request);
+    public ApiResponse<Booking> book(@RequestBody BookingRequest request) {
+
+        Booking bookingResponse = bookingService.createBooking(request);
+        return ApiResponse.success(bookingResponse);
     }
 }

@@ -8,4 +8,8 @@ public class AvailabilityResponse {
     public AvailabilityResponse(List<String> availableSlots) {
         this.availableSlots = availableSlots;
     }
+
+    public List<String> getAvailableSlots() {
+        return availableSlots;
+    }
 }

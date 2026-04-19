@@ -12,9 +12,11 @@ import com.starnoh.turf.bookingsystem.backend.util.TimeSlot;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class BookingService {
@@ -33,21 +35,25 @@ public class BookingService {
         Turf turf = turfRepository.findById(request.getTurfId())
                 .orElseThrow(() -> new RuntimeException("Turf not found"));
 
-        Team team = teamRepository.findByPhoneNumber(request.getPhoneNumber())
-                .orElseThrow(() -> new RuntimeException("Turf not found"));
+// 1. Get the existing team or create/save a new one in one flow
+        Team savedTeam = teamRepository.findByPhoneNumber(request.getPhoneNumber())
+                .orElseGet(() -> {
+                    Team newTeam = new Team();
+                    newTeam.setTeamName(request.getTeamName());
+                    newTeam.setPhoneNumber(request.getPhoneNumber());
+                    return teamRepository.save(newTeam);
+                });
 
-        Team savedTeam = new Team();
-        savedTeam.setTeamName(request.getTeamName());
-        savedTeam.setPhoneNumber(request.getPhoneNumber());
-        teamRepository.save(savedTeam);
-
+// 2. Proceed with booking (savedTeam is now guaranteed to be a Team object)
         Booking booking = new Booking();
         booking.setTurf(turf);
-        booking.setTeam(team);
+        booking.setTeam(savedTeam);
         booking.setStartTime(request.getStartTime());
         booking.setEndTime(request.getEndTime());
-        booking.setAmount(2000L);
+        booking.setAmount(turf.getTurfPriceRate());
+
         return bookingRepository.save(booking);
+
     }
 
     public List<TimeSlot> generateSlots() {
@@ -68,23 +74,35 @@ public class BookingService {
         return slots;
     }
 
-    private boolean isFree(TimeSlot slot, List<Booking> bookings) {
+    private boolean isFree(TimeSlot slot, List<Booking> bookings, LocalDate date) {
+
+        LocalDateTime slotStart = LocalDateTime.of(date, slot.getStart());
+        LocalDateTime slotEnd = LocalDateTime.of(date, slot.getEnd());
 
         return bookings.stream().noneMatch(booking ->
-                booking.getStartTime().equals(slot.getStart())
+                slotStart.isBefore(booking.getEndTime()) &&
+                        booking.getStartTime().isBefore(slotEnd)
         );
     }
 
 
     public AvailabilityResponse getAvailability(Long turfId, LocalDate date) {
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.atTime(23,59,59);
+
+        if(turfId == null){
+            throw new RuntimeException("Turf Id not provided");
+        }
         List<TimeSlot> allSlots = generateSlots();
         List<Booking> bookings =
-                bookingRepository.findByTurfIdAndDate(turfId, date);
+                bookingRepository.findBookingsForDay(turfId, startOfDay , endOfDay);
 
         List<String> available = allSlots.stream()
-                .filter(slot -> isFree(slot, bookings))
+                .filter(slot -> isFree(slot, bookings , date))
                 .map(TimeSlot::toString)
                 .toList();
+
+        available.forEach(System.out::println);
 
         return new AvailabilityResponse(available);
     }

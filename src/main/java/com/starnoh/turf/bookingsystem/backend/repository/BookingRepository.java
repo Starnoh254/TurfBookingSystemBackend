@@ -27,4 +27,18 @@ AND b.endTime > :startOfDay
             LocalDateTime startOfDay,
             LocalDateTime endOfDay
     );
+
+    @Query("""
+SELECT b FROM Booking b
+WHERE b.turf.id = :turfId
+AND (
+    (:startTime < b.endTime AND :endTime > b.startTime)
+)
+""")
+    List<Booking> findConflictingBookings(
+            Long turfId,
+            LocalDateTime startTime,
+            LocalDateTime endTime
+    );
+
 }

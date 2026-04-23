@@ -34,7 +34,7 @@ public class BookingService {
         Turf turf = turfRepository.findById(request.getTurfId())
                 .orElseThrow(() -> new RuntimeException("Turf not found"));
 
-// 1. Get the existing team or create/save a new one in one flow
+        // 1. Get the existing team or create/save a new one in one flow
         Team savedTeam = teamRepository.findByPhoneNumber(request.getPhoneNumber())
                 .orElseGet(() -> {
                     Team newTeam = new Team();
@@ -43,7 +43,15 @@ public class BookingService {
                     return teamRepository.save(newTeam);
                 });
 
-// 2. Proceed with booking (savedTeam is now guaranteed to be a Team object)
+        List<Booking> conflicts = bookingRepository.findConflictingBookings(
+                request.getTurfId(),
+                request.getStartTime(),
+                request.getEndTime()
+        );
+
+        if(!conflicts.isEmpty()) throw new RuntimeException("Turf already booked for this time slot");
+
+        // 2. Proceed with booking (savedTeam is now guaranteed to be a Team object)
         Booking booking = new Booking();
         booking.setTurf(turf);
         booking.setTeam(savedTeam);
@@ -101,7 +109,7 @@ public class BookingService {
                 .map(TimeSlot::toString)
                 .toList();
 
-        available.forEach(System.out::println);
+//        available.forEach(System.out::println);
 
         return new AvailabilityResponse(available);
     }

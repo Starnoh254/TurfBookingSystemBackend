@@ -12,6 +12,8 @@ public class Team {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String teamName;
+
+    @Column(unique = true)
     private String phoneNumber;
 
     @CreationTimestamp

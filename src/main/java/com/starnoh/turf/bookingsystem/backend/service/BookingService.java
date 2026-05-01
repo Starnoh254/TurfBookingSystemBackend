@@ -11,6 +11,7 @@ import com.starnoh.turf.bookingsystem.backend.repository.TurfRepository;
 import com.starnoh.turf.bookingsystem.backend.util.TimeSlot;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -34,6 +35,10 @@ public class BookingService {
         Turf turf = turfRepository.findById(request.getTurfId())
                 .orElseThrow(() -> new RuntimeException("Turf not found"));
 
+        if (request.getEndTime().isBefore(request.getStartTime())) {
+            throw new RuntimeException("End time must be after start time");
+        }
+
         // 1. Get the existing team or create/save a new one in one flow
         Team savedTeam = teamRepository.findByPhoneNumber(request.getPhoneNumber())
                 .orElseGet(() -> {
@@ -51,13 +56,21 @@ public class BookingService {
 
         if(!conflicts.isEmpty()) throw new RuntimeException("Turf already booked for this time slot");
 
+
+
         // 2. Proceed with booking (savedTeam is now guaranteed to be a Team object)
         Booking booking = new Booking();
         booking.setTurf(turf);
         booking.setTeam(savedTeam);
         booking.setStartTime(request.getStartTime());
         booking.setEndTime(request.getEndTime());
-        booking.setAmount(turf.getTurfPriceRate());
+
+        Duration duration = Duration.between(request.getStartTime(), request.getEndTime());
+        long minutes = duration.toMinutes();
+        double hours = minutes / 60.0;
+
+        double amount = turf.getTurfPriceRate() * hours;
+        booking.setAmount((long) amount);
 
         return bookingRepository.save(booking);
 

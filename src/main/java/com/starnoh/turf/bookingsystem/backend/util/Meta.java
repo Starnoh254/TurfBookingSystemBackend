@@ -7,9 +7,10 @@ public class Meta {
     private String version;
 
     public Meta() {
-        this.timestamp = Instant.now().toString();
+        this.timestamp = java.time.LocalDateTime.now().toString();
         this.version = "1.0";
     }
+
 
     public String getTimestamp() { return timestamp; }
     public String getVersion() { return version; }
